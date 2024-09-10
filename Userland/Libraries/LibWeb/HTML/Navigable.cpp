@@ -1181,11 +1181,16 @@ WebIDL::ExceptionOr<void> Navigable::populate_session_history_entry_document(
             // 3. If entry's document state's request referrer is "client", and navigationParams is a navigation params (i.e., neither null nor a non-fetch scheme navigation params), then:
             if (entry->document_state()->request_referrer() == Fetch::Infrastructure::Request::Referrer::Client
                 && (!navigation_params.has<Empty>() && Fetch::Infrastructure::is_fetch_scheme(entry->url().scheme()))) {
-                // 1. Assert: navigationParams's request is not null.
-                VERIFY(navigation_params.get<JS::NonnullGCPtr<NavigationParams>>()->request);
+                // FIXME: We should not have to check whether navigationParams is a navigationParams struct
+                //        by this point. Currently this check is necessary because navigationParams may be a
+                //        AK::StringView in the case of a network error with the request.
+                if (navigation_params.has<JS::NonnullGCPtr<NavigationParams>>()) {
+                    // 1. Assert: navigationParams's request is not null.
+                    VERIFY(navigation_params.get<JS::NonnullGCPtr<NavigationParams>>()->request);
 
-                // 2. Set entry's document state's request referrer to navigationParams's request's referrer.
-                entry->document_state()->set_request_referrer(navigation_params.get<JS::NonnullGCPtr<NavigationParams>>()->request->referrer());
+                    // 2. Set entry's document state's request referrer to navigationParams's request's referrer.
+                    entry->document_state()->set_request_referrer(navigation_params.get<JS::NonnullGCPtr<NavigationParams>>()->request->referrer());
+                }
             }
         }
 
